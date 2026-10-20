@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"moduleResolution": "bundler",
+		"module": "esnext",
+		"paths": {
+			"$lib/*": ["./src/lib/*"],
+			"$app/navigation": [
+				"./node_modules/@sveltejs/kit/src/runtime/app/navigation/public.d.ts"
+			],
+			"$app/stores": [
+				"./node_modules/@sveltejs/kit/src/runtime/app/state/public.d.ts"
+			],
+			"$app/types": ["./node_modules/$app/types/index.d.ts"]
+		},
+		"allowJs": true,
+		"checkJs": false,
+		"skipLibCheck": true,
+		"noEmit": true
+	},
+	"include": ["src", "vite.config.ts", "convex"],
+	"exclude": ["convex/_generated"]
+}
