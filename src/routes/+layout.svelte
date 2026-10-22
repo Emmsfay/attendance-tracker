@@ -1,19 +1,20 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 	import type { Snippet } from "svelte";
 	import { convex } from "../lib/convex/client";
 	import { api } from "../lib/convex/generated";
-	import { signOut, isSignedIn } from "../lib/convex/auth";
+	import { signOut, isSignedIn, setAuthTokens } from "../lib/convex/auth";
 
 	let props: { children: Snippet } = $props();
 	let authed = $state(isSignedIn());
 	let me: any = $state(null);
+	let authError = $state("");
 
 	onMount(async () => {
 		authed = isSignedIn();
-		if (!authed && $page.url.pathname !== "/login") {
+		if (!authed && page.url.pathname !== "/login") {
 			goto("/login");
 			return;
 		}
@@ -21,8 +22,11 @@
 			try {
 				me = await convex.query(api.workers.getMe, {});
 			} catch {
+				await setAuthTokens(null, null);
 				authed = false;
 				me = null;
+				authError = "Your session could not be verified. Please sign in again.";
+				goto("/login");
 			}
 		}
 	});
@@ -37,17 +41,19 @@
 
 <nav class="navbar">
 	<div class="brand">Attendance&nbsp;Tracker</div>
-	<div class="links">
-		<a href="/dashboard" class={$page.url.pathname === "/dashboard" ? "active" : ""}
-			>Dashboard</a
-		>
-		<a href="/attendance" class={$page.url.pathname === "/attendance" ? "active" : ""}
-			>Attendance</a
-		>
-		{#if me?.role === "manager"}
-			<a href="/admin" class={$page.url.pathname === "/admin" ? "active" : ""}>Admin</a>
-		{/if}
-	</div>
+	{#if authed}
+		<div class="links">
+			<a href="/dashboard" class={page.url.pathname === "/dashboard" ? "active" : ""}
+				>Dashboard</a
+			>
+			<a href="/attendance" class={page.url.pathname === "/attendance" ? "active" : ""}
+				>Attendance</a
+			>
+			{#if me?.role === "manager"}
+				<a href="/admin" class={page.url.pathname === "/admin" ? "active" : ""}>Admin</a>
+			{/if}
+		</div>
+	{/if}
 	<div class="user">
 		{#if authed}
 			<span>{me?.name ?? "User"} <small>({me?.role})</small></span>
@@ -59,8 +65,18 @@
 </nav>
 
 <main>{@render props.children()}</main>
+{#if authError}
+	<p class="auth-error" role="alert">{authError}</p>
+{/if}
 
 <style>
+	:global(body) {
+		margin: 0;
+		background: #f9fafb;
+		color: #111827;
+		font-family:
+			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
 	.navbar {
 		display: flex;
 		align-items: center;
@@ -102,6 +118,16 @@
 	.user small {
 		color: #cbd5e1;
 	}
+	.user a {
+		color: #93c5fd;
+		text-decoration: none;
+		padding: 0.25rem 0.6rem;
+		border-radius: 4px;
+	}
+	.user a:hover {
+		background: #374151;
+		color: #fff;
+	}
 	button {
 		background: #ef4444;
 		color: #fff;
@@ -118,5 +144,11 @@
 		max-width: 900px;
 		margin: 1.5rem auto;
 		padding: 0 1rem;
+	}
+	.auth-error {
+		max-width: 900px;
+		margin: 0 auto 1rem;
+		padding: 0 1rem;
+		color: #991b1b;
 	}
 </style>

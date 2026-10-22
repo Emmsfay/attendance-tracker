@@ -10,3 +10,8 @@ if (!url) {
 
 /** Single Convex client used across the SvelteKit app. */
 export const convex = new ConvexClient(url);
+
+convex.setAuth(async () => {
+	if (typeof localStorage === "undefined") return null;
+	return localStorage.getItem("at_token");
+});

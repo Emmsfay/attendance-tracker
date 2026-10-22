@@ -18,8 +18,11 @@ export function isSignedIn(): boolean {
  * subsequent requests. The fetcher reads localStorage so token rotation
  * (e.g. sign out) is picked up automatically.
  */
-export function setAuthTokens(token: string | null, refreshToken: string | null) {
-	if (typeof localStorage === "undefined") return;
+export function setAuthTokens(
+	token: string | null,
+	refreshToken: string | null,
+): Promise<void> {
+	if (typeof localStorage === "undefined") return Promise.resolve();
 	if (token) {
 		localStorage.setItem(TOKEN_KEY, token);
 	} else {
@@ -30,10 +33,29 @@ export function setAuthTokens(token: string | null, refreshToken: string | null)
 	} else {
 		localStorage.removeItem(REFRESH_KEY);
 	}
-	convex.setAuth(
-		async () => localStorage.getItem(TOKEN_KEY),
-		() => {},
-	);
+
+	if (!token) {
+		convex.setAuth(async () => null, () => {});
+		return Promise.resolve();
+	}
+
+	return new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => {
+			reject(new Error("Timed out while confirming your Convex sign-in."));
+		}, 15_000);
+
+		convex.setAuth(
+			async () => localStorage.getItem(TOKEN_KEY),
+			(isAuthenticated) => {
+				clearTimeout(timeout);
+				if (isAuthenticated) {
+					resolve();
+				} else {
+					reject(new Error("Convex could not authenticate this session."));
+				}
+			},
+		);
+	});
 }
 
 /** Sign in with email + password. Returns the Convex sign-in result. */
@@ -45,16 +67,19 @@ export async function signIn(email: string, password: string) {
 	if (!result || !result.tokens) {
 		throw new Error("Invalid email or password");
 	}
-	setAuthTokens(result.tokens.token, result.tokens.refreshToken);
+	try {
+		await setAuthTokens(result.tokens.token, result.tokens.refreshToken);
+	} catch (error) {
+		await setAuthTokens(null, null);
+		throw error;
+	}
 	return result;
 }
 
 /** Sign out the current user. */
 export async function signOut() {
-	try {
-		await convex.action(api.auth.signOut, {});
-	} catch {
-		// Ignore errors; clear local state regardless.
-	}
+	void convex.action(api.auth.signOut, {}).catch(() => {
+		// Local sign-out must still work if the backend is unavailable.
+	});
 	setAuthTokens(null, null);
 }
