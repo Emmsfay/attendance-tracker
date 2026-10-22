@@ -1,20 +1,19 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { page } from "$app/state";
+	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
-	import type { Snippet } from "svelte";
-	import { convex } from "../lib/convex/client";
-	import { api } from "../lib/convex/generated";
-	import { signOut, isSignedIn, setAuthTokens } from "../lib/convex/auth";
+	import { convex } from "$lib/convex/client";
+	import { api } from "$lib/convex/generated";
+	import { signOut, isSignedIn } from "$lib/convex/auth";
+	import { icon } from "$lib/icons";
 
-	let props: { children: Snippet } = $props();
+	let props: { children: import("svelte").Snippet } = $props();
 	let authed = $state(isSignedIn());
 	let me: any = $state(null);
-	let authError = $state("");
 
 	onMount(async () => {
 		authed = isSignedIn();
-		if (!authed && page.url.pathname !== "/login") {
+		if (!authed && $page.url.pathname !== "/login") {
 			goto("/login");
 			return;
 		}
@@ -22,11 +21,8 @@
 			try {
 				me = await convex.query(api.workers.getMe, {});
 			} catch {
-				await setAuthTokens(null, null);
 				authed = false;
 				me = null;
-				authError = "Your session could not be verified. Please sign in again.";
-				goto("/login");
 			}
 		}
 	});
@@ -37,118 +33,114 @@
 		me = null;
 		goto("/login");
 	}
+
+	const homePath = (role: string) => (role === "manager" ? "/admin" : "/dashboard");
+	const navItems = (role: string) =>
+		role === "manager"
+			? [
+					{ path: "/admin", label: "Today", icon: "calendar" },
+					{ path: "/admin/team", label: "Team", icon: "users" }
+			  ]
+			: [
+					{ path: "/dashboard", label: "Dashboard", icon: "clock" },
+					{ path: "/attendance", label: "History", icon: "list" }
+			  ];
+	const items = navItems(me?.role ?? "worker");
+	const currentRoute = $page.url.pathname;
 </script>
 
-<nav class="navbar">
-	<div class="brand">Attendance&nbsp;Tracker</div>
-	{#if authed}
-		<div class="links">
-			<a href="/dashboard" class={page.url.pathname === "/dashboard" ? "active" : ""}
-				>Dashboard</a
-			>
-			<a href="/attendance" class={page.url.pathname === "/attendance" ? "active" : ""}
-				>Attendance</a
-			>
-			{#if me?.role === "manager"}
-				<a href="/admin" class={page.url.pathname === "/admin" ? "active" : ""}>Admin</a>
+<header class="onsite-topbar">
+	<div class="onsite-topbar-inner">
+		<a class="onsite-brand" href="#/">
+			<svg class="onsite-brand-mark" viewBox="0 0 34 34" aria-hidden="true">
+				<circle cx="17" cy="17" r="17" fill="#9fe870" />
+				<path
+					d="M17 8.5v8.5l5.5 3.2"
+					fill="none"
+					stroke="#163300"
+					stroke-width="2.8"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				/>
+			</svg>
+			<span>OnSite</span>
+		</a>
+		<nav class="onsite-tabs" aria-label="Primary">
+			{#each items as item}
+				<a
+					class="onsite-tab"
+					href="#{item.path}"
+					aria-current={currentRoute === item.path ? "page" : undefined}
+					>{@html icon(item.icon)} <span>{item.label}</span></a
+				>
+			{/each}
+		</nav>
+		<div class="onsite-topbar-right">
+			{#if authed}
+				<span class="onsite-topbar-date">{new Date().toLocaleDateString(undefined, { weekday: "short" })} {new Date().getDate()} {new Date().toLocaleDateString(undefined, { month: "short" })}</span>
+				<div class="onsite-account-wrap">
+					<button
+						class="onsite-account-btn"
+						id="account-btn"
+						aria-expanded="false"
+						aria-controls="account-menu"
+						aria-label="Account menu for {me?.name ?? ""}"
+					>
+						<span class="onsite-avatar {me?.role === "manager" ? "onsite-avatar-dark" : ""}" aria-hidden="true"
+							>{me?.name?.split(" ").map((n: string) => n[0]).join("") ?? "?"}</span
+						>
+						<span class="account-name">{me?.name ?? "User"}</span>
+						{@html icon("chevron", "onsite-od-icon-16")}
+					</button>
+					<div class="onsite-account-menu" id="account-menu" hidden>
+						<div class="onsite-account-id">
+							<span class="onsite-avatar onsite-avatar-lg {me?.role === "manager" ? "onsite-avatar-dark" : ""}" aria-hidden="true"
+								>{me?.name?.split(" ").map((n: string) => n[0]).join("") ?? "?"}</span
+							>
+							<div class="od-fill">
+								<strong>{me?.name ?? "User"}</strong>
+								<span class="onsite-ontruncate">{me?.email ?? ""}</span>
+							</div>
+						</div>
+						<div class="onsite-account-meta">
+							<span class="onsite-chip {me?.role === "manager" ? "onsite-chip-role" : "onsite-chip-neutral"}"
+								>{me?.role ?? "worker"}</span
+							>
+							<span class="onsite-account-emp">{me?.employeeId ?? ""}</span>
+						</div>
+						<button class="onsite-btn onsite-btn-secondary onsite-btn-full" onclick={logout}>
+							{@html icon("logout")} Sign out
+						</button>
+					</div>
+				</div>
 			{/if}
 		</div>
-	{/if}
-	<div class="user">
-		{#if authed}
-			<span>{me?.name ?? "User"} <small>({me?.role})</small></span>
-			<button onclick={logout}>Sign out</button>
-		{:else}
-			<a href="/login">Sign in</a>
-		{/if}
+	</div>
+</header>
+
+<main class="onsite-page" id="main">{@render props.children()}</main>
+
+<nav class="onsite-bottom-nav" aria-label="Primary">
+	<div class="onsite-bnav-inner">
+		{#each items as item}
+			<a
+				class="onsite-bnav-item"
+				href="#{item.path}"
+				aria-current={currentRoute === item.path ? "page" : undefined}
+			>
+				{@html icon(item.icon)} <span>{item.label}</span>
+			</a>
+		{/each}
 	</div>
 </nav>
 
-<main>{@render props.children()}</main>
-{#if authError}
-	<p class="auth-error" role="alert">{authError}</p>
-{/if}
-
 <style>
+	@import "../app.css";
 	:global(body) {
 		margin: 0;
-		background: #f9fafb;
-		color: #111827;
-		font-family:
-			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	}
-	.navbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.75rem 1.5rem;
-		background: #1f2937;
-		color: #fff;
-		gap: 1rem;
-		flex-wrap: wrap;
-	}
-	.brand {
-		font-weight: 700;
-		font-size: 1.25rem;
-		letter-spacing: 0.5px;
-	}
-	.links {
-		display: flex;
-		gap: 1rem;
-		align-items: center;
-		flex-wrap: wrap;
-	}
-	.links a {
-		color: #93c5fd;
-		text-decoration: none;
-		padding: 0.25rem 0.6rem;
-		border-radius: 4px;
-	}
-	.links a:hover,
-	.links a.active {
-		background: #374151;
-		color: #fff;
-	}
-	.user {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		font-size: 0.9rem;
-	}
-	.user small {
-		color: #cbd5e1;
-	}
-	.user a {
-		color: #93c5fd;
-		text-decoration: none;
-		padding: 0.25rem 0.6rem;
-		border-radius: 4px;
-	}
-	.user a:hover {
-		background: #374151;
-		color: #fff;
-	}
-	button {
-		background: #ef4444;
-		color: #fff;
-		border: none;
-		padding: 0.25rem 0.75rem;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 0.85rem;
-	}
-	button:hover {
-		background: #dc2626;
-	}
-	main {
-		max-width: 900px;
-		margin: 1.5rem auto;
-		padding: 0 1rem;
-	}
-	.auth-error {
-		max-width: 900px;
-		margin: 0 auto 1rem;
-		padding: 0 1rem;
-		color: #991b1b;
+	.od-fill {
+		flex: 1 1 0;
+		min-width: 0;
 	}
 </style>
