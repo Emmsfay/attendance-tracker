@@ -208,8 +208,14 @@
 		border-radius: 50%;
 		background: rgba(159, 232, 112, 0.14);
 		color: var(--onsite-accent);
-		display: grid;
-		place-items: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 0;
+		flex: none;
+	}
+	.onsite-auth-point-icon :global(.onsite-od-icon) {
+		display: block;
 		flex: none;
 	}
 	.onsite-auth-points strong {
@@ -303,14 +309,18 @@
 		width: 34px;
 		height: 34px;
 		flex: none;
-		display: grid;
-		place-items: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 0;
 		border-radius: 50%;
 		background: var(--onsite-surface);
 		color: var(--onsite-success);
 	}
-	.onsite-auth-note-icon .onsite-od-icon {
+	.onsite-auth-note-icon :global(.onsite-od-icon) {
 		--onsite-icon-size: 17px;
+		display: block;
+		flex: none;
 	}
 	.onsite-auth-note-body {
 		display: flex;
