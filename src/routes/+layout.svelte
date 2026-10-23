@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { page } from "$app/stores";
+	import { page } from "$app/state";
 	import { goto } from "$app/navigation";
 	import { convex } from "#lib/convex/client";
 	import { api } from "#lib/convex/generated";
@@ -14,7 +14,7 @@
 
 	onMount(async () => {
 		authed = isSignedIn();
-		if (!authed && $page.url.pathname !== "/login") {
+		if (!authed && page.url.pathname !== "/login") {
 			goto("/login");
 			return;
 		}
@@ -46,8 +46,8 @@
 					{ path: "/dashboard", label: "Dashboard", icon: "clock" },
 					{ path: "/attendance", label: "History", icon: "list" }
 			  ];
-	const items = navItems(me?.role ?? "worker");
-	const currentRoute = $page.url.pathname;
+	const items = $derived(navItems(me?.role ?? "worker"));
+	const currentRoute = $derived(page.url.pathname);
 </script>
 
 <header class="onsite-topbar">
