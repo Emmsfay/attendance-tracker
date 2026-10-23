@@ -2,10 +2,11 @@
 	import { onMount } from "svelte";
 	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
-	import { convex } from "$lib/convex/client";
-	import { api } from "$lib/convex/generated";
-	import { signOut, isSignedIn } from "$lib/convex/auth";
-	import { icon } from "$lib/icons";
+	import { convex } from "#lib/convex/client";
+	import { api } from "#lib/convex/generated";
+	import { signOut, isSignedIn } from "#lib/convex/auth";
+	import { icon } from "#lib/icons";
+	import "../app.css";
 
 	let props: { children: import("svelte").Snippet } = $props();
 	let authed = $state(isSignedIn());
@@ -135,7 +136,6 @@
 </nav>
 
 <style>
-	@import "../app.css";
 	:global(body) {
 		margin: 0;
 	}

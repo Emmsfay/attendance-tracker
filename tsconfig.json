@@ -5,14 +5,14 @@
 		"module": "esnext",
 		"baseUrl": ".",
 		"paths": {
-			"$lib/*": ["./src/lib/*"],
 			"$app/navigation": [
 				"./node_modules/@sveltejs/kit/src/runtime/app/navigation/public.d.ts"
 			],
 			"$app/stores": [
 				"./node_modules/@sveltejs/kit/src/runtime/app/state/public.d.ts"
 			],
-			"$app/types": ["./node_modules/$app/types/index.d.ts"]
+			"$app/types": ["./node_modules/$app/types/index.d.ts"],
+			"#lib/*": ["./src/lib/*"]
 		},
 		"allowJs": true,
 		"checkJs": false,

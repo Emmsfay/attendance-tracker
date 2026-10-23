@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { signIn } from "$lib/convex/auth";
-	import { icon } from "$lib/icons";
+	import { signIn } from "#lib/convex/auth";
+	import { icon } from "#lib/icons";
 
 	let email = $state("");
 	let password = $state("");
@@ -187,7 +187,6 @@
 </div>
 
 <style>
-	@import "../app.css";
 
 	.onsite-auth {
 		min-height: 100dvh;

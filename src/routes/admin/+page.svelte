@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { convex } from "$lib/convex/client";
-	import { api } from "$lib/convex/generated";
-	import { icon } from "$lib/icons";
+	import { convex } from "#lib/convex/client";
+	import { api } from "#lib/convex/generated";
+	import { icon } from "#lib/icons";
 	import type { GenericId as Id } from "convex/values";
 
 	let workers = $state<any[]>([]);
@@ -241,7 +241,6 @@
 </article>
 
 <style>
-	@import "../app.css";
 
 	.status {
 		font-size: 0.85rem;

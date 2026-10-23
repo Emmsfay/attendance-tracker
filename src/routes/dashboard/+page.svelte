@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { convex } from "$lib/convex/client";
-	import { api } from "$lib/convex/generated";
-	import { icon } from "$lib/icons";
+	import { convex } from "#lib/convex/client";
+	import { api } from "#lib/convex/generated";
+	import { icon } from "#lib/icons";
 
 	let rows = $state<any[]>([]);
 	let today = $state<any>(null);
@@ -332,7 +332,6 @@
 </article>
 
 <style>
-	@import "../app.css";
 
 	.clock-card {
 		background: var(--onsite-surface-deep);
