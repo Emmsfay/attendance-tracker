@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
+	import { convex } from "#lib/convex/client";
+	import { api } from "#lib/convex/generated";
 	import { signIn } from "#lib/convex/auth";
 	import { icon } from "#lib/icons";
 
@@ -9,35 +11,26 @@
 	let loading = $state(false);
 	let showPassword = $state(false);
 
-	const demoAccounts = [
-		{ role: "worker", name: "Alex Rivera", email: "alex.rivera@northwind.studio" },
-		{ role: "manager", name: "Dana Whitfield", email: "dana.whitfield@northwind.studio" }
-	];
-
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		error = "";
 		loading = true;
 		try {
 			await signIn(email.trim(), password);
-			goto("/dashboard");
+			const me = await convex.query(api.workers.getMe, {});
+			goto(me.role === "manager" ? "/admin" : "/dashboard");
 		} catch (err: any) {
 			error = err?.message || "Sign in failed";
 		} finally {
 			loading = false;
 		}
 	}
-
-	function useDemo(account: { email: string }) {
-		email = account.email;
-		password = "onsite2026";
-	}
 </script>
 
-<div class="auth">
+<div class="onsite-auth">
 	<aside class="onsite-auth-brand">
 		<div class="onsite-auth-pitch">
-			<p class="onsite-eyebrow onsite-eyebrow-on-dark">OnSite &middot; New York</p>
+			<p class="onsite-eyebrow onsite-eyebrow-on-dark">Attendance tracker</p>
 			<h1 class="onsite-auth-headline">Every shift,<br /><span>on the record.</span></h1>
 			<p class="onsite-auth-lede">
 				One tap to clock in. Times, GPS and late or early flags are saved the moment you punch
@@ -75,7 +68,7 @@
 
 	<main class="onsite-auth-main">
 		<div class="onsite-auth-form">
-			<div class="onsite-auth-mobile-brand">{@html icon("clock", "onsite-od-icon-20")} <span style="font-weight:900;font-size:20px">OnSite</span></div>
+			<div class="onsite-auth-mobile-brand">{@html icon("clock", "onsite-od-icon-20")} <span style="font-weight:900;font-size:20px">Attendance</span></div>
 			<div>
 				<p class="onsite-eyebrow">Sign in</p>
 				<h1 class="onsite-auth-title">Welcome back.</h1>
@@ -97,7 +90,7 @@
 						type="email"
 						inputmode="email"
 						autocomplete="username"
-						placeholder="you@northwind.studio"
+						placeholder="you@company.com"
 						bind:value={email}
 						required
 					/>
@@ -140,45 +133,12 @@
 				</button>
 			</form>
 
-			<div class="demo">
-				<div class="demo-head">
-					<p class="onsite-eyebrow">Demo accounts</p>
-					<span class="onsite-tiny">Tap to sign in</span>
-				</div>
-				<div class="demo-grid">
-					{#each demoAccounts as account}
-						<button class="demo-btn" type="button" onclick={() => useDemo(account)}>
-							<span class="demo-role">{account.role}</span>
-							<strong>{account.name}</strong>
-							<span class="demo-email onsite-truncate">{account.email}</span>
-						</button>
-					{/each}
-				</div>
-				<button class="demo-reset" type="button">
-					{@html icon("refresh", "onsite-od-icon-14")} Reset demo passwords
-				</button>
-			</div>
-
-			<div class="onsite-auth-setup">
-				<span>Setting up a new workspace?</span>
-				<button class="linkish" type="button" onclick={() => goto("/login")}>
-					Create the first manager
-				</button>
-			</div>
-
 			<div class="onsite-auth-note" role="note">
 				<span class="onsite-auth-note-icon">{@html icon("doc", "onsite-od-icon-18")}</span>
 				<div class="onsite-auth-note-body">
-					<div class="onsite-auth-note-head">
-						<span class="onsite-auth-note-title">Prototype workspace</span>
-						<span class="onsite-auth-note-fence">200 m fence</span>
-					</div>
 					<p class="onsite-auth-note-text">
-						Demo accounts and records live in this browser and reset each day.
-					</p>
-					<p class="onsite-auth-note-geo">
-						{@html icon("pin", "onsite-od-icon-14")} Financial District, New York
-						<span class="onsite-auth-note-coords">40.7128, -74.0060</span>
+						First time here? Bootstrap the initial manager with
+						<code>npx convex run workers:createFirstManager</code> (see README).
 					</p>
 				</div>
 			</div>

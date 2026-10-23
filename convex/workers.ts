@@ -7,6 +7,10 @@ import {
 import { internal } from "./_generated/api";
 import { getAuthUserId, createAccount } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+	dedupeWorkerProfiles,
+	workerProfileForUserId,
+} from "./workerProfile";
 
 /* ------------------------------------------------------------------ */
 /* Internal helpers (usable from actions via ctx.runQuery/runMutation) */
@@ -25,10 +29,16 @@ export const hasWorkers = internalQuery({
 export const getWorkerByUserId = internalQuery({
 	args: { userId: v.id("users") },
 	handler: async (ctx, args) => {
-		return await ctx.db
-			.query("workers")
-			.filter((q) => q.eq(q.field("userId"), args.userId))
-			.unique();
+		return await workerProfileForUserId(ctx, args.userId);
+	},
+});
+
+/** One-time cleanup when duplicate profiles exist for the same login. */
+export const dedupeWorkerProfilesMutation = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const removed = await dedupeWorkerProfiles(ctx);
+		return { removed };
 	},
 });
 
@@ -66,10 +76,7 @@ async function requireWorker(ctx: any): Promise<any> {
 	if (userId === null) {
 		throw new Error("Not authenticated");
 	}
-	const worker = await ctx.db
-		.query("workers")
-		.filter((q: any) => q.eq(q.field("userId"), userId))
-		.unique();
+	const worker = await workerProfileForUserId(ctx, userId);
 	if (!worker) {
 		throw new Error("No worker profile for this account");
 	}
@@ -171,6 +178,13 @@ export const createWorker = action({
 			shouldLinkViaPhone: false,
 		});
 		const userId = created.user._id;
+		const existingProfile = await ctx.runQuery(
+			internal.workers.getWorkerByUserId,
+			{ userId },
+		);
+		if (existingProfile) {
+			throw new Error("This email already has a worker profile");
+		}
 		await ctx.runMutation(internal.workers.insertWorker, {
 			userId,
 			role: args.role,
@@ -201,7 +215,10 @@ export const getMe = query({
 export const getWorker = query({
 	args: { workerId: v.id("workers") },
 	handler: async (ctx, args) => {
-		await requireWorker(ctx);
+		const caller = await requireWorker(ctx);
+		if (caller.role !== "manager" && caller._id !== args.workerId) {
+			throw new Error("Not allowed");
+		}
 		return await ctx.db.get(args.workerId);
 	},
 });

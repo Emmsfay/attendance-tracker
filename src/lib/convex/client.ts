@@ -1,5 +1,4 @@
 import { ConvexClient } from "convex/browser";
-import { api } from "../../../convex/_generated/api";
 
 const url = import.meta.env.PUBLIC_CONVEX_URL;
 if (!url) {
@@ -10,8 +9,3 @@ if (!url) {
 
 /** Single Convex client used across the SvelteKit app. */
 export const convex = new ConvexClient(url);
-
-convex.setAuth(async () => {
-	if (typeof localStorage === "undefined") return null;
-	return localStorage.getItem("at_token");
-});

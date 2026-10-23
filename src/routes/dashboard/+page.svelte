@@ -11,18 +11,17 @@
 	let msg = $state("");
 
 	const OFFICE = {
-		name: "Northwind Studio",
-		address: "Financial District, New York",
+		name: "Main office",
+		address: "Office geofence (see env vars)",
 		lat: 40.7128,
 		lng: -74.0060,
 		radius: 200
 	};
 
 	const todayISO = () => new Date().toISOString().slice(0, 10);
-	const timeToMin = (t: string | null) => {
-		if (!t) return null;
-		const p = t.split(":").map(Number);
-		return p[0] * 60 + (p[1] || 0);
+	const minutesFromMs = (ms: number) => {
+		const d = new Date(ms);
+		return d.getUTCHours() * 60 + d.getUTCMinutes();
 	};
 	const hhmm = (ms: number | null) => {
 		if (!ms) return "\u2014";
@@ -52,7 +51,23 @@
 		}
 	}
 
-	onMount(load);
+	onMount(() => {
+		load();
+		const tick = () => {
+			const now = new Date();
+			const hm = document.getElementById("live-hm");
+			const sec = document.getElementById("live-sec");
+			if (hm) {
+				hm.textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+			}
+			if (sec) {
+				sec.textContent = `:${String(now.getSeconds()).padStart(2, "0")}`;
+			}
+		};
+		tick();
+		const id = setInterval(tick, 1000);
+		return () => clearInterval(id);
+	});
 
 	function getLocation(): Promise<any | null> {
 		return new Promise((resolve) => {
@@ -100,11 +115,10 @@
 	};
 
 	const workedLabel = (rec: any) => {
-		if (!rec || !rec.clockIn) return "\u2014";
-		const start = timeToMin(rec.clockIn);
-		const nowStr = new Date().toISOString().slice(11, 16);
-		const end = rec.clockOut ? timeToMin(rec.clockOut) : timeToMin(nowStr);
-		if (start == null || end == null || end < start) return "\u2014";
+		if (!rec || rec.clockIn == null) return "\u2014";
+		const start = minutesFromMs(rec.clockIn);
+		const end = rec.clockOut != null ? minutesFromMs(rec.clockOut) : minutesFromMs(Date.now());
+		if (end < start) return "\u2014";
 		const h = Math.floor((end - start) / 60);
 		const m = (end - start) % 60;
 		if (h <= 0) return `${m}m`;
@@ -153,25 +167,29 @@
 		}
 	}
 
-	const rec = today;
-	const f = rec
-		? {
-				late: isLate(rec.clockIn),
-				early: rec.clockOut ? isTooEarly(rec.clockOut) : false,
-				open: !rec.clockOut,
-				complete: !!rec.clockOut
-		  }
-		: { late: false, early: false, open: false, complete: false };
+	const rec = $derived(today);
+	const f = $derived(
+		rec
+			? {
+					late: rec.clockIn != null ? isLate(rec.clockIn) : false,
+					early: rec.clockOut ? isTooEarly(rec.clockOut) : false,
+					open: !rec.clockOut,
+					complete: !!rec.clockOut
+			  }
+			: { late: false, early: false, open: false, complete: false }
+	);
 
-	const gpsLoc = rec
-		? rec.clockOut
-			? rec.clockOutLocation
-				? locationFromCoords(rec.clockOutLocation)
-				: null
-			: rec.clockInLocation
-				? locationFromCoords(rec.clockInLocation)
-				: null
-		: null;
+	const gpsLoc = $derived(
+		rec
+			? rec.clockOut
+				? rec.clockOutLocation
+					? locationFromCoords(rec.clockOutLocation)
+					: null
+				: rec.clockInLocation
+					? locationFromCoords(rec.clockInLocation)
+					: null
+			: null
+	);
 </script>
 
 <article class="onsite-page">
@@ -292,7 +310,7 @@
 							<div class="mini-row">
 								<div>
 									<span class="mini-date">{row.date}</span>
-									<span class="mini-weekday">Mon</span>
+									<span class="mini-weekday">{new Date(row.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short" })}</span>
 								</div>
 								<div class="mini-right">
 									<span class="mini-times onsite-nowrap">{row.clockInTime ?? "\u2014"} &ndash; {row.clockOutTime ?? "\u2014"}</span>

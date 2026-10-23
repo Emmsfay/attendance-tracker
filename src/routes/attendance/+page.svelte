@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { convex } from "#lib/convex/client";
 	import { api } from "#lib/convex/generated";
 	import { icon } from "#lib/icons";
@@ -32,6 +33,8 @@
 			loading = false;
 		}
 	}
+
+	onMount(load);
 
 	const statusText = (row: any) => {
 		const parts: string[] = [];

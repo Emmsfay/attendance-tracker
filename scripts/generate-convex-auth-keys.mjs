@@ -1,0 +1,8 @@
+import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
+
+const keys = await generateKeyPair("RS256", { extractable: true });
+const privateKey = await exportPKCS8(keys.privateKey);
+const publicKey = await exportJWK(keys.publicKey);
+const jwks = JSON.stringify({ keys: [{ use: "sig", ...publicKey }] });
+
+process.stdout.write(`${privateKey.trimEnd()}\n---JWKS---\n${jwks}\n`);

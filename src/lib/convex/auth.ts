@@ -13,10 +13,46 @@ export function isSignedIn(): boolean {
 	return getToken() !== null;
 }
 
+/** Used by ConvexClient.setAuth — must match AuthTokenFetcher signature. */
+export async function fetchAccessToken({
+	forceRefreshToken,
+}: {
+	forceRefreshToken: boolean;
+}): Promise<string | null> {
+	if (typeof localStorage === "undefined") return null;
+
+	if (!forceRefreshToken) {
+		return localStorage.getItem(TOKEN_KEY);
+	}
+
+	const refresh = localStorage.getItem(REFRESH_KEY);
+	if (!refresh) {
+		return localStorage.getItem(TOKEN_KEY);
+	}
+
+	try {
+		const result = await convex.action(api.auth.signIn, {
+			refreshToken: refresh,
+		});
+		if (result?.tokens?.token) {
+			localStorage.setItem(TOKEN_KEY, result.tokens.token);
+			if (result.tokens.refreshToken) {
+				localStorage.setItem(REFRESH_KEY, result.tokens.refreshToken);
+			}
+			return result.tokens.token;
+		}
+	} catch {
+		// Use cached access token if refresh fails (e.g. offline).
+	}
+
+	return localStorage.getItem(TOKEN_KEY);
+}
+
+convex.setAuth(fetchAccessToken);
+
 /**
- * Persist Convex auth tokens and tell the ConvexClient to send them with
- * subsequent requests. The fetcher reads localStorage so token rotation
- * (e.g. sign out) is picked up automatically.
+ * Persist Convex auth tokens and wire them into the client.
+ * Does not wait on WebSocket auth confirmation (that requires JWKS on the deployment).
  */
 export function setAuthTokens(
 	token: string | null,
@@ -34,28 +70,8 @@ export function setAuthTokens(
 		localStorage.removeItem(REFRESH_KEY);
 	}
 
-	if (!token) {
-		convex.setAuth(async () => null, () => {});
-		return Promise.resolve();
-	}
-
-	return new Promise((resolve, reject) => {
-		const timeout = setTimeout(() => {
-			reject(new Error("Timed out while confirming your Convex sign-in."));
-		}, 15_000);
-
-		convex.setAuth(
-			async () => localStorage.getItem(TOKEN_KEY),
-			(isAuthenticated) => {
-				clearTimeout(timeout);
-				if (isAuthenticated) {
-					resolve();
-				} else {
-					reject(new Error("Convex could not authenticate this session."));
-				}
-			},
-		);
-	});
+	convex.setAuth(fetchAccessToken);
+	return Promise.resolve();
 }
 
 /** Sign in with email + password. Returns the Convex sign-in result. */
@@ -67,12 +83,9 @@ export async function signIn(email: string, password: string) {
 	if (!result || !result.tokens) {
 		throw new Error("Invalid email or password");
 	}
-	try {
-		await setAuthTokens(result.tokens.token, result.tokens.refreshToken);
-	} catch (error) {
-		await setAuthTokens(null, null);
-		throw error;
-	}
+	await setAuthTokens(result.tokens.token, result.tokens.refreshToken);
+	// Prove the session works before leaving the login page.
+	await convex.query(api.workers.getMe, {});
 	return result;
 }
 
@@ -81,5 +94,5 @@ export async function signOut() {
 	void convex.action(api.auth.signOut, {}).catch(() => {
 		// Local sign-out must still work if the backend is unavailable.
 	});
-	setAuthTokens(null, null);
+	await setAuthTokens(null, null);
 }

@@ -21,6 +21,14 @@
 		if (authed) {
 			try {
 				me = await convex.query(api.workers.getMe, {});
+				const path = page.url.pathname;
+				if (me.role === "manager" && (path === "/dashboard" || path === "/attendance")) {
+					goto("/admin");
+				} else if (me.role === "worker" && path === "/admin") {
+					goto("/dashboard");
+				} else if (path === "/login") {
+					goto(me.role === "manager" ? "/admin" : "/dashboard");
+				}
 			} catch {
 				authed = false;
 				me = null;
@@ -38,21 +46,30 @@
 	const homePath = (role: string) => (role === "manager" ? "/admin" : "/dashboard");
 	const navItems = (role: string) =>
 		role === "manager"
-			? [
-					{ path: "/admin", label: "Today", icon: "calendar" },
-					{ path: "/admin/team", label: "Team", icon: "users" }
-			  ]
+			? [{ path: "/admin", label: "Admin", icon: "calendar" }]
 			: [
 					{ path: "/dashboard", label: "Dashboard", icon: "clock" },
 					{ path: "/attendance", label: "History", icon: "list" }
 			  ];
 	const items = $derived(navItems(me?.role ?? "worker"));
 	const currentRoute = $derived(page.url.pathname);
+	const isLogin = $derived(page.url.pathname === "/login");
+	const showChrome = $derived(authed && !isLogin);
+
+	function toggleAccountMenu() {
+		const menu = document.getElementById("account-menu");
+		const btn = document.getElementById("account-btn");
+		if (!menu || !btn) return;
+		const open = menu.hidden;
+		menu.hidden = !open;
+		btn.setAttribute("aria-expanded", open ? "true" : "false");
+	}
 </script>
 
+{#if showChrome}
 <header class="onsite-topbar">
 	<div class="onsite-topbar-inner">
-		<a class="onsite-brand" href="#/">
+		<a class="onsite-brand" href={homePath(me?.role ?? "worker")}>
 			<svg class="onsite-brand-mark" viewBox="0 0 34 34" aria-hidden="true">
 				<circle cx="17" cy="17" r="17" fill="#9fe870" />
 				<path
@@ -64,13 +81,13 @@
 					stroke-linejoin="round"
 				/>
 			</svg>
-			<span>OnSite</span>
+			<span>Attendance</span>
 		</a>
 		<nav class="onsite-tabs" aria-label="Primary">
 			{#each items as item}
 				<a
 					class="onsite-tab"
-					href="#{item.path}"
+					href={item.path}
 					aria-current={currentRoute === item.path ? "page" : undefined}
 					>{@html icon(item.icon)} <span>{item.label}</span></a
 				>
@@ -81,11 +98,13 @@
 				<span class="onsite-topbar-date">{new Date().toLocaleDateString(undefined, { weekday: "short" })} {new Date().getDate()} {new Date().toLocaleDateString(undefined, { month: "short" })}</span>
 				<div class="onsite-account-wrap">
 					<button
+						type="button"
 						class="onsite-account-btn"
 						id="account-btn"
 						aria-expanded="false"
 						aria-controls="account-menu"
 						aria-label="Account menu for {me?.name ?? ""}"
+						onclick={toggleAccountMenu}
 					>
 						<span class="onsite-avatar {me?.role === "manager" ? "onsite-avatar-dark" : ""}" aria-hidden="true"
 							>{me?.name?.split(" ").map((n: string) => n[0]).join("") ?? "?"}</span
@@ -100,7 +119,7 @@
 							>
 							<div class="od-fill">
 								<strong>{me?.name ?? "User"}</strong>
-								<span class="onsite-ontruncate">{me?.email ?? ""}</span>
+								<span class="onsite-ontruncate">{me?.employeeId ?? ""}</span>
 							</div>
 						</div>
 						<div class="onsite-account-meta">
@@ -118,15 +137,17 @@
 		</div>
 	</div>
 </header>
+{/if}
 
 <main class="onsite-page" id="main">{@render props.children()}</main>
 
+{#if showChrome}
 <nav class="onsite-bottom-nav" aria-label="Primary">
 	<div class="onsite-bnav-inner">
 		{#each items as item}
 			<a
 				class="onsite-bnav-item"
-				href="#{item.path}"
+				href={item.path}
 				aria-current={currentRoute === item.path ? "page" : undefined}
 			>
 				{@html icon(item.icon)} <span>{item.label}</span>
@@ -134,6 +155,7 @@
 		{/each}
 	</div>
 </nav>
+{/if}
 
 <style>
 	:global(body) {

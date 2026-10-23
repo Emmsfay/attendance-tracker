@@ -69,8 +69,8 @@ export interface Office {
 export function officeConfig(): Office {
 	const e = env as Record<string, string | undefined>;
 	return {
-		latitude: Number(e["OFFICE_LATITUDE"] ?? 0),
-		longitude: Number(e["OFFICE_LONGITUDE"] ?? 0),
+		latitude: Number(e["OFFICE_LATITUDE"] ?? 40.7128),
+		longitude: Number(e["OFFICE_LONGITUDE"] ?? -74.006),
 		radiusMeters: Number(e["OFFICE_RADIUS_METERS"] ?? 200),
 	};
 }

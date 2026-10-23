@@ -29,12 +29,10 @@ npm install
 # 2. Initialize a Convex deployment (creates .env.local with PUBLIC_CONVEX_URL)
 npx convex init
 
-# 3. Set the JWT signing key on your Convex deployment.
-#    Open the Convex dashboard, go to Settings → Environment variables, and add:
-#    JWT_PRIVATE_KEY = <an RSA PKCS#8 private key, e.g. from `openssl genpkey -algorithm RSA`>
-#
-#    The CLI cannot safely multiline-paste this value from all shells, so the
-#    dashboard is the most reliable way to set it.
+# 3. Set Convex Auth JWT keys on your deployment (both are required):
+#    node scripts/generate-convex-auth-keys.mjs
+#    Pipe the private key and JWKS to Convex (see script output), or use the dashboard.
+#    Names: JWT_PRIVATE_KEY and JWKS
 
 # 4. (Optional) Configure the office geofence. Edit .env.local (or set on the
 #    deployment) — defaults are New York City, 200 m radius:

@@ -8,6 +8,7 @@ import {
 	todayDateString,
 	hhmm,
 } from "./utils";
+import { workerProfileForUserId } from "./workerProfile";
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -18,10 +19,7 @@ async function getWorkerProfile(ctx: any): Promise<any> {
 	if (userId === null) {
 		throw new Error("Not authenticated");
 	}
-	const worker = await ctx.db
-		.query("workers")
-		.filter((q: any) => q.eq(q.field("userId"), userId))
-		.unique();
+	const worker = await workerProfileForUserId(ctx, userId);
 	if (!worker) {
 		throw new Error("No worker profile for this account");
 	}
@@ -85,7 +83,7 @@ export const clockIn = mutation({
 			.unique();
 
 		if (existing !== null) {
-			if (existing.clockIn !== null) {
+			if (existing.clockIn != null) {
 				throw new Error("Already clocked in today");
 			}
 			await ctx.db.patch(existing._id, {
@@ -138,10 +136,10 @@ export const clockOut = mutation({
 			)
 			.unique();
 
-		if (existing === null || existing.clockIn === null) {
+		if (existing === null || existing.clockIn == null) {
 			throw new Error("Not clocked in today");
 		}
-		if (existing.clockOut !== null) {
+		if (existing.clockOut != null) {
 			throw new Error("Already clocked out today");
 		}
 
@@ -166,12 +164,16 @@ export const updateAttendance = mutation({
 	},
 	handler: async (ctx, args) => {
 		await requireManager(ctx);
+		const existing = await ctx.db.get(args.attendanceId);
+		if (!existing) {
+			throw new Error("Attendance record not found");
+		}
 		const patch: Record<string, any> = {};
 		if (args.clockIn !== undefined) patch.clockIn = args.clockIn;
 		if (args.clockOut !== undefined) patch.clockOut = args.clockOut;
 		if (args.note !== undefined) patch.note = args.note;
-		const updated = await ctx.db.patch(args.attendanceId, patch);
-		return enrich(updated);
+		await ctx.db.patch(args.attendanceId, patch);
+		return enrich({ ...existing, ...patch });
 	},
 });
 
