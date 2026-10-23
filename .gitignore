@@ -18,8 +18,7 @@ Thumbs.db
 !.env.example
 !.env.test
 
-# Convex (generated / local backend state)
-convex/_generated
+# Convex local dev state (generated API is committed for Vercel/CI builds)
 convex/.dev
 
 # Vite
