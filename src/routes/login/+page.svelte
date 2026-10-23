@@ -4,6 +4,7 @@
 	import { api } from "#lib/convex/generated";
 	import { signIn } from "#lib/convex/auth";
 	import { icon } from "#lib/icons";
+	import IconCircle from "#lib/IconCircle.svelte";
 
 	let email = $state("");
 	let password = $state("");
@@ -38,21 +39,21 @@
 			</p>
 			<ul class="onsite-auth-points">
 				<li>
-					<span class="onsite-auth-point-icon">{@html icon("pin", "onsite-od-icon-18")}</span>
+					<IconCircle name="pin" />
 					<div>
 						<strong>Every punch stamped</strong>
 						<span>GPS coordinates, accuracy and distance from the office.</span>
 					</div>
 				</li>
 				<li>
-					<span class="onsite-auth-point-icon">{@html icon("clock", "onsite-od-icon-18")}</span>
+					<IconCircle name="clock" />
 					<div>
 						<strong>Honest by default</strong>
 						<span>Late after 08:00, early before 17:00. No grace period.</span>
 					</div>
 				</li>
 				<li>
-					<span class="onsite-auth-point-icon">{@html icon("doc", "onsite-od-icon-18")}</span>
+					<IconCircle name="doc" />
 					<div>
 						<strong>Corrections with a reason</strong>
 						<span>Managers edit times and leave a note on the record.</span>
@@ -134,7 +135,7 @@
 			</form>
 
 			<div class="onsite-auth-note" role="note">
-				<span class="onsite-auth-note-icon">{@html icon("doc", "onsite-od-icon-18")}</span>
+				<IconCircle name="doc" size={17} variant="note" />
 				<div class="onsite-auth-note-body">
 					<p class="onsite-auth-note-text">
 						First time here? Bootstrap the initial manager with
@@ -201,22 +202,6 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 14px;
-	}
-	.onsite-auth-point-icon {
-		width: 38px;
-		height: 38px;
-		border-radius: 50%;
-		background: rgba(159, 232, 112, 0.14);
-		color: var(--onsite-accent);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 0;
-		flex: none;
-	}
-	.onsite-auth-point-icon :global(.onsite-od-icon) {
-		display: block;
-		flex: none;
 	}
 	.onsite-auth-points strong {
 		display: block;
@@ -304,23 +289,6 @@
 			radial-gradient(120% 140% at 100% 0%, rgba(159, 232, 112, 0.18), rgba(159, 232, 112, 0) 58%),
 			#f7f9f4;
 		box-shadow: inset 0 0 0 1px var(--onsite-border);
-	}
-	.onsite-auth-note-icon {
-		width: 34px;
-		height: 34px;
-		flex: none;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 0;
-		border-radius: 50%;
-		background: var(--onsite-surface);
-		color: var(--onsite-success);
-	}
-	.onsite-auth-note-icon :global(.onsite-od-icon) {
-		--onsite-icon-size: 17px;
-		display: block;
-		flex: none;
 	}
 	.onsite-auth-note-body {
 		display: flex;

@@ -749,10 +749,37 @@ textarea.onsite-input {
 }
 
 .onsite-od-icon {
-	display: inline-block;
-	inline-size: var(--onsite-icon-size, 1em);
-	block-size: var(--onsite-icon-size, 1em);
+	display: block;
+	width: var(--onsite-icon-size, 1em);
+	height: var(--onsite-icon-size, 1em);
+	max-width: 100%;
+	max-height: 100%;
 	flex: none;
+}
+
+/* Login pitch: icon in circle (IconCircle.svelte) */
+.onsite-icon-circle {
+	box-sizing: border-box;
+	width: 38px;
+	height: 38px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background: rgba(159, 232, 112, 0.14);
+	color: var(--onsite-accent);
+	flex: none;
+	line-height: 0;
+}
+.onsite-icon-circle svg {
+	display: block;
+	flex: none;
+}
+.onsite-icon-circle--note {
+	width: 34px;
+	height: 34px;
+	background: var(--onsite-surface);
+	color: var(--onsite-success);
 }
 .onsite-od-icon-14 {
 	--onsite-icon-size: 14px;
