@@ -34,8 +34,8 @@
 			<p class="onsite-eyebrow onsite-eyebrow-on-dark">Attendance tracker</p>
 			<h1 class="onsite-auth-headline">Every shift,<br /><span>on the record.</span></h1>
 			<p class="onsite-auth-lede">
-				One tap to clock in. Times, GPS and late or early flags are saved the moment you punch
-				&mdash; and managers can correct a record without losing the trail.
+				One tap to clock in. Times, GPS and late or early flags are saved the moment you punch and
+				managers can correct a record without losing the trail.
 			</p>
 			<ul class="onsite-auth-points">
 				<li>
