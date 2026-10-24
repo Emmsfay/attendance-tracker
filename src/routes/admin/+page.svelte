@@ -3,6 +3,7 @@
 	import { convex } from "#lib/convex/client";
 	import { api } from "#lib/convex/generated";
 	import { icon } from "#lib/icons";
+	import LocationMap from "#lib/LocationMap.svelte";
 	import type { GenericId as Id } from "convex/values";
 
 	let workers = $state<any[]>([]);
@@ -21,6 +22,18 @@
 	let fixClockIn = $state("");
 	let fixClockOut = $state("");
 	let fixNote = $state("");
+	/** Attendance row id whose punch map is expanded, or null */
+	let mapForId = $state<string | null>(null);
+
+	const locationLabel = (onSite: boolean | null) => {
+		if (onSite === true) return "On-site";
+		if (onSite === false) return "Off-site";
+		return "Unknown";
+	};
+
+	const toggleMap = (id: string) => {
+		mapForId = mapForId === id ? null : id;
+	};
 
 	async function load() {
 		loading = true;
@@ -178,6 +191,7 @@
 							<th style="text-align:left;padding:0.55rem 0.75rem;border-bottom:1px solid var(--onsite-border);font-size:0.8rem;color:var(--onsite-ink-soft);background:var(--onsite-surface)">Clock in</th>
 							<th style="text-align:left;padding:0.55rem 0.75rem;border-bottom:1px solid var(--onsite-border);font-size:0.8rem;color:var(--onsite-ink-soft);background:var(--onsite-surface)">Clock out</th>
 							<th style="text-align:left;padding:0.55rem 0.75rem;border-bottom:1px solid var(--onsite-border);font-size:0.8rem;color:var(--onsite-ink-soft);background:var(--onsite-surface)">Status</th>
+							<th style="text-align:left;padding:0.55rem 0.75rem;border-bottom:1px solid var(--onsite-border);font-size:0.8rem;color:var(--onsite-ink-soft);background:var(--onsite-surface)">Location</th>
 							<th style="text-align:left;padding:0.55rem 0.75rem;border-bottom:1px solid var(--onsite-border);font-size:0.8rem;color:var(--onsite-ink-soft);background:var(--onsite-surface)">Action</th>
 						</tr>
 					</thead>
@@ -193,9 +207,37 @@
 									{#if r.isTooEarly}<span class="onsite-chip onsite-chip-early">Early-out</span>{/if}
 									{#if !r.clockOut && r.clockIn}<span class="onsite-chip onsite-chip-neutral">Open shift</span>{/if}
 									{#if r.clockInOnSite === false}<span class="onsite-chip onsite-chip-neutral">In: off-site</span>{/if}
+									{#if r.clockOutOnSite === false}<span class="onsite-chip onsite-chip-neutral">Out: off-site</span>{/if}
+								</td>
+								<td class="loc-cell">
+									{#if r.clockInLocation || r.clockOutLocation}
+										<div class="loc-summary">
+											{#if r.clockInLocation}
+												<span class="loc-line">
+													In: {locationLabel(r.clockInOnSite)}
+												</span>
+											{/if}
+											{#if r.clockOutLocation}
+												<span class="loc-line">
+													Out: {locationLabel(r.clockOutOnSite)}
+												</span>
+											{/if}
+										</div>
+										<button
+											type="button"
+											class="onsite-btn onsite-btn-quiet onsite-btn-sm"
+											onclick={() => toggleMap(r._id)}
+										>
+											{@html icon("pin", "onsite-od-icon-16")}
+											{mapForId === r._id ? "Hide map" : "View map"}
+										</button>
+									{:else}
+										<span class="onsite-muted">No GPS</span>
+									{/if}
 								</td>
 								<td>
 									<button
+										type="button"
 										onclick={() => {
 											fixId = r._id as unknown as Id<"attendance">;
 											fixClockIn = r.clockInTime ?? "";
@@ -207,6 +249,27 @@
 									</button>
 								</td>
 							</tr>
+							{#if mapForId === r._id && (r.clockInLocation || r.clockOutLocation)}
+								<tr class="map-row">
+									<td colspan="7">
+										{#if r.clockInLocation}
+											<LocationMap
+												latitude={r.clockInLocation.latitude}
+												longitude={r.clockInLocation.longitude}
+												title="{r.workerName} — clock in"
+											/>
+										{/if}
+										{#if r.clockOutLocation}
+											<LocationMap
+												latitude={r.clockOutLocation.latitude}
+												longitude={r.clockOutLocation.longitude}
+												title="{r.workerName} — clock out"
+												height={r.clockInLocation ? 180 : 220}
+											/>
+										{/if}
+									</td>
+								</tr>
+							{/if}
 						{/each}
 					</tbody>
 				</table>
@@ -263,6 +326,29 @@
 		border-bottom: 1px solid var(--onsite-border);
 	}
 	tr:hover {
+		background: var(--onsite-surface);
+	}
+	.loc-cell {
+		min-width: 7.5rem;
+		vertical-align: top;
+	}
+	.loc-summary {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin-bottom: 6px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.loc-line {
+		color: var(--onsite-ink-soft);
+	}
+	.map-row td {
+		background: var(--onsite-surface);
+		padding-top: 0.25rem;
+		padding-bottom: 1rem;
+	}
+	.map-row:hover {
 		background: var(--onsite-surface);
 	}
 </style>
